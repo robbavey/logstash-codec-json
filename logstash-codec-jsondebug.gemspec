@@ -1,9 +1,9 @@
 Gem::Specification.new do |s|
 
-  s.name            = 'logstash-codec-json'
+  s.name            = 'logstash-codec-jsondebug'
   s.version         = '3.0.2'
   s.licenses        = ['Apache License (2.0)']
-  s.summary         = "This codec may be used to decode (via inputs) and encode (via outputs) full JSON messages"
+  s.summary         = "This codec may be used to decode (via inputs) and encode (via outputs) full Jsondebug messages"
   s.description     = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using $LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program"
   s.authors         = ["Elastic"]
   s.email           = 'info@elastic.co'

@@ -1,12 +1,12 @@
 require "logstash/devutils/rspec/spec_helper"
-require "logstash/codecs/json"
+require "logstash/codecs/json_debug"
 require "logstash/event"
 require "logstash/json"
 require "insist"
 
-describe LogStash::Codecs::JSON do
+describe LogStash::Codecs::JsonDebug do
   subject do
-    LogStash::Codecs::JSON.new
+    LogStash::Codecs::JsonDebug.new
   end
 
   shared_examples :codec do

@@ -5,29 +5,33 @@ require "logstash/json"
 require "logstash/event"
 
 # This codec may be used to decode (via inputs) and encode (via outputs)
-# full JSON messages. If the data being sent is a JSON array at its root multiple events will be created (one per element).
+# full Jsondebug messages. If the data being sent is a Jsondebug array at its root multiple events will be created (one per element).
 #
-# If you are streaming JSON messages delimited
+# If you are streaming Jsondebug messages delimited
 # by '\n' then see the `json_lines` codec.
 #
-# Encoding will result in a compact JSON representation (no line terminators or indentation)
+# Encoding will result in a compact Jsondebug representation (no line terminators or indentation)
 #
-# If this codec recieves a payload from an input that is not valid JSON, then
-# it will fall back to plain text and add a tag `_jsonparsefailure`. Upon a JSON
+# If this codec recieves a payload from an input that is not valid Jsondebug, then
+# it will fall back to plain text and add a tag `_jsonparsefailure`. Upon a Jsondebug
 # failure, the payload will be stored in the `message` field.
-class LogStash::Codecs::JSON < LogStash::Codecs::Base
-  config_name "json"
+class LogStash::Codecs::JsonDebug < LogStash::Codecs::Base
+  config_name "jsondebug"
 
   # The character encoding used in this codec. Examples include "UTF-8" and
   # "CP1252".
   #
-  # JSON requires valid UTF-8 strings, but in some cases, software that
-  # emits JSON does so in another encoding (nxlog, for example). In
+  # Jsondebug requires valid UTF-8 strings, but in some cases, software that
+  # emits Jsondebug does so in another encoding (nxlog, for example). In
   # weird cases like this, you can set the `charset` setting to the
   # actual encoding of the text and Logstash will convert it for you.
   #
   # For nxlog users, you may to set this to "CP1252".
   config :charset, :validate => ::Encoding.name_list, :default => "UTF-8"
+
+  config :pretty, :validate => :boolean, :default => false
+
+  config :metadata, :validate => :boolean, :default => false
 
   def register
     @converter = LogStash::Util::Charset.new(@charset)
@@ -39,7 +43,11 @@ class LogStash::Codecs::JSON < LogStash::Codecs::Base
   end
 
   def encode(event)
-    @on_event.call(event, event.to_json)
+    if metadata
+      @on_event.call(event, LogStash::Json.dump(event.to_hash_with_metadata, {:pretty => pretty}) + NL)
+    else
+      @on_event.call(event, LogStash::Json.dump(event.to_hash, {:pretty => pretty}) + NL)
+    end
   end
 
   private
@@ -47,7 +55,7 @@ class LogStash::Codecs::JSON < LogStash::Codecs::Base
   def from_json_parse(json, &block)
     LogStash::Event.from_json(json).each { |event| yield event }
   rescue LogStash::Json::ParserError => e
-    @logger.error("JSON parse error, original data now in message field", :error => e, :data => json)
+    @logger.error("Jsondebug parse error, original data now in message field", :error => e, :data => json)
     yield LogStash::Event.new("message" => json, "tags" => ["_jsonparsefailure"])
   end
 
@@ -60,17 +68,17 @@ class LogStash::Codecs::JSON < LogStash::Codecs::Base
     when Hash
       yield LogStash::Event.new(decoded)
     else
-      @logger.error("JSON codec is expecting array or object/map", :data => json)
+      @logger.error("Jsondebug codec is expecting array or object/map", :data => json)
       yield LogStash::Event.new("message" => json, "tags" => ["_jsonparsefailure"])
     end
   rescue LogStash::Json::ParserError => e
-    @logger.info("JSON parse failure. Falling back to plain-text", :error => e, :data => json)
+    @logger.info("Jsondebug parse failure. Falling back to plain-text", :error => e, :data => json)
     yield LogStash::Event.new("message" => json, "tags" => ["_jsonparsefailure"])
   rescue StandardError => e
     # This should NEVER happen. But hubris has been the cause of many pipeline breaking things
     # If something bad should happen we just don't want to crash logstash here.
     @logger.warn(
-      "An unexpected error occurred parsing JSON data",
+      "An unexpected error occurred parsing Jsondebug data",
       :data => json,
       :message => e.message,
       :class => e.class.name,
